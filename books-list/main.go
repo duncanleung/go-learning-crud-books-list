@@ -1,100 +1,98 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"strconv"
+
+	"books-list/controllers"
+	"books-list/driver"
+	"books-list/models"
 
 	"github.com/gorilla/mux"
+	"github.com/subosito/gotenv"
 )
 
-type Book struct {
-	ID     int    `json:id`
-	Title  string `json:title`
-	Author string `json:author`
-	Year   string `json:year`
+var books []models.Book
+var db *sql.DB
+
+func init() {
+	gotenv.Load()
 }
 
-var books []Book
+func logFatal(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func main() {
+	db = driver.ConnectDB()
+	controller := controllers.Controller{}
+
 	router := mux.NewRouter()
 
-	router.HandleFunc("/books", getBooks).Methods("GET")
+	router.HandleFunc("/books", controller.GetBooks(db)).Methods("GET")
 	router.HandleFunc("/books/{id}", getBook).Methods("GET")
 	router.HandleFunc("/books", addBook).Methods("POST")
 	router.HandleFunc("/books/{id}", updateBook).Methods("PUT")
 	router.HandleFunc("/books/{id}", removeBook).Methods("DELETE")
 
+	fmt.Println("Server is running  at port 3008")
 	log.Fatal(http.ListenAndServe(":3008", router))
 }
 
-func getBooks(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(books)
-}
-
 func getBook(w http.ResponseWriter, r *http.Request) {
+	var book models.Book
 	params := mux.Vars(r)
 
-	id, _ := strconv.Atoi(params["id"])
-	if id > len(books) {
-		json.NewEncoder(w).Encode("not in list")
-		return
-	}
+	row := db.QueryRow("select * from books where id=$1", params["id"])
 
-	for _, book := range books {
-		if book.ID == id {
-			json.NewEncoder(w).Encode(book)
-		}
-	}
+	err := row.Scan(&book.ID, &book.Title, &book.Author, &book.Year)
+	logFatal(err)
+
+	json.NewEncoder(w).Encode(book)
 }
 
 func addBook(w http.ResponseWriter, r *http.Request) {
-	var book Book
-	_ = json.NewDecoder(r.Body).Decode(&book)
+	var book models.Book
+	var bookID int
 
-	books = append(books, book)
+	json.NewDecoder(r.Body).Decode(&book)
 
-	json.NewEncoder(w).Encode(books)
+	err := db.QueryRow("insert into books (title, author, year) values($1, $2, $3) RETURNING id;", book.Title, book.Author, book.Year).Scan(&bookID)
+	logFatal(err)
 
+	json.NewEncoder(w).Encode(bookID)
 }
 
 func updateBook(w http.ResponseWriter, r *http.Request) {
+	var book models.Book
 	params := mux.Vars(r)
 
-	id, _ := strconv.Atoi(params["id"])
-	if id > len(books) {
-		json.NewEncoder(w).Encode("not in list")
-		return
-	}
+	json.NewDecoder(r.Body).Decode(&book)
 
-	var updatedBook Book
-	updatedBook.ID = id
-	json.NewDecoder(r.Body).Decode(&updatedBook)
+	log.Println(book)
 
-	for i, book := range books {
-		if book.ID == id {
-			books[i] = updatedBook
-		}
-	}
+	result, err := db.Exec("update books set title=$1, author=$2, year=$3 where id=$4 RETURNING id", &book.Title, &book.Author, &book.Year, params["id"])
+	logFatal(err)
 
-	json.NewEncoder(w).Encode(books)
+	rowsUpdated, err := result.RowsAffected()
+	logFatal(err)
+
+	json.NewEncoder(w).Encode(rowsUpdated)
 }
+
 func removeBook(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
-	if id > len(books) {
-		json.NewEncoder(w).Encode("not in list")
-		return
-	}
 
-	for i, book := range books {
-		if book.ID == id {
-			books = append(books[:i], books[i+1:]...)
-		}
-	}
+	result, err := db.Exec("delete from books where id = $1", params["id"])
+	logFatal(err)
 
-	json.NewEncoder(w).Encode(books)
+	rowsDeleted, err := result.RowsAffected()
+	logFatal(err)
 
+	json.NewEncoder(w).Encode(rowsDeleted)
 }
