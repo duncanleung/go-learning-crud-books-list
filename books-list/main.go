@@ -10,6 +10,7 @@ import (
 	"books-list/driver"
 	"books-list/models"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/subosito/gotenv"
 )
@@ -40,5 +41,15 @@ func main() {
 	router.HandleFunc("/books/{id}", controller.RemoveBook(db)).Methods("DELETE")
 
 	fmt.Println("Server is running  at port 3008")
-	log.Fatal(http.ListenAndServe(":3008", router))
+
+	allowedHeaders := []string{"X-Requested-With", "Content-Type", "Authorization"}
+	allowedMethods := []string{"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"}
+	allowedOrigins := []string{"*"}
+
+	log.Fatal(http.ListenAndServe(":3008",
+		handlers.CORS(
+			handlers.AllowedHeaders(allowedHeaders),
+			handlers.AllowedMethods(allowedMethods),
+			handlers.AllowedOrigins(allowedOrigins),
+		)(router)))
 }
