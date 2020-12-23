@@ -58,3 +58,17 @@ func (b BookRepository) UpdateBook(db *sql.DB, book models.Book, id int) (int64,
 
 	return rowsUpdated, err
 }
+
+func (b BookRepository) RemoveBook(db *sql.DB, id int) (int64, error) {
+	result, err := db.Exec("delete from books where id = $1", id)
+	if err != nil {
+		return 0, err
+	}
+
+	rowsDeleted, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rowsDeleted, nil
+}

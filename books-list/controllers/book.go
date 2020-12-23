@@ -134,3 +134,30 @@ func (c Controller) UpdateBook(db *sql.DB) http.HandlerFunc {
 		utils.SendSuccess(w, rowsUpdated)
 	}
 }
+
+func (c Controller) RemoveBook(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var error models.Error
+
+		params := mux.Vars(r)
+		id, _ := strconv.Atoi(params["id"])
+
+		bookRepo := bookRepos.BookRepository{}
+		rowsDeleted, err := bookRepo.RemoveBook(db, id)
+		if err != nil {
+			error.Message = "Server error"
+			utils.SendError(w, http.StatusInternalServerError, error)
+			return
+		}
+
+		if rowsDeleted == 0 {
+			error.Message = "Not Found"
+			utils.SendError(w, http.StatusNotFound, error)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		utils.SendSuccess(w, rowsDeleted)
+	}
+
+}

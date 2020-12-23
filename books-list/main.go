@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -38,20 +37,8 @@ func main() {
 	router.HandleFunc("/books/{id}", controller.GetBook(db)).Methods("GET")
 	router.HandleFunc("/books", controller.AddBook(db)).Methods("POST")
 	router.HandleFunc("/books/{id}", controller.UpdateBook(db)).Methods("PUT")
-	router.HandleFunc("/books/{id}", removeBook).Methods("DELETE")
+	router.HandleFunc("/books/{id}", controller.RemoveBook(db)).Methods("DELETE")
 
 	fmt.Println("Server is running  at port 3008")
 	log.Fatal(http.ListenAndServe(":3008", router))
-}
-
-func removeBook(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-
-	result, err := db.Exec("delete from books where id = $1", params["id"])
-	logFatal(err)
-
-	rowsDeleted, err := result.RowsAffected()
-	logFatal(err)
-
-	json.NewEncoder(w).Encode(rowsDeleted)
 }
