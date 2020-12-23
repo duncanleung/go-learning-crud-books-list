@@ -100,7 +100,7 @@ func (c Controller) AddBook(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "text/plain")
 		utils.SendSuccess(w, bookID)
 	}
 }
@@ -130,7 +130,7 @@ func (c Controller) UpdateBook(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "text/plain")
 		utils.SendSuccess(w, rowsUpdated)
 	}
 }
@@ -156,7 +156,7 @@ func (c Controller) RemoveBook(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "text/plain")
 		utils.SendSuccess(w, rowsDeleted)
 	}
 
