@@ -4,6 +4,7 @@ import (
 	"books-list/models"
 	bookRepos "books-list/repository/book"
 	"books-list/utils"
+	"encoding/json"
 	"log"
 	"strconv"
 
@@ -73,5 +74,33 @@ func (c Controller) GetBook(db *sql.DB) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		utils.SendSuccess(w, book)
+	}
+}
+
+func (c Controller) AddBook(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var book models.Book
+		var error models.Error
+		var bookID int
+
+		json.NewDecoder(r.Body).Decode(&book)
+
+		if book.Author == "" || book.Title == "" || book.Year == "" {
+			error.Message = "Please enter Author, Title, and Year"
+			utils.SendError(w, http.StatusBadRequest, error)
+			return
+		}
+
+		bookRepo := bookRepos.BookRepository{}
+		bookID, err := bookRepo.AddBook(db, book, bookID)
+
+		if err != nil {
+			error.Message = "Server error"
+			utils.SendError(w, http.StatusInternalServerError, error)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		utils.SendSuccess(w, bookID)
 	}
 }

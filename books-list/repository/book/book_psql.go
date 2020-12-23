@@ -35,3 +35,13 @@ func (b BookRepository) GetBook(db *sql.DB, book models.Book, id int) (models.Bo
 
 	return book, err
 }
+
+func (b BookRepository) AddBook(db *sql.DB, book models.Book, bookID int) (int, error) {
+	err := db.QueryRow("insert into books (title, author, year) values($1, $2, $3) RETURNING id;", book.Title, book.Author, book.Year).Scan(&bookID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return bookID, nil
+}
