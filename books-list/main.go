@@ -37,28 +37,11 @@ func main() {
 	router.HandleFunc("/books", controller.GetBooks(db)).Methods("GET")
 	router.HandleFunc("/books/{id}", controller.GetBook(db)).Methods("GET")
 	router.HandleFunc("/books", controller.AddBook(db)).Methods("POST")
-	router.HandleFunc("/books/{id}", updateBook).Methods("PUT")
+	router.HandleFunc("/books/{id}", controller.UpdateBook(db)).Methods("PUT")
 	router.HandleFunc("/books/{id}", removeBook).Methods("DELETE")
 
 	fmt.Println("Server is running  at port 3008")
 	log.Fatal(http.ListenAndServe(":3008", router))
-}
-
-func updateBook(w http.ResponseWriter, r *http.Request) {
-	var book models.Book
-	params := mux.Vars(r)
-
-	json.NewDecoder(r.Body).Decode(&book)
-
-	log.Println(book)
-
-	result, err := db.Exec("update books set title=$1, author=$2, year=$3 where id=$4 RETURNING id", &book.Title, &book.Author, &book.Year, params["id"])
-	logFatal(err)
-
-	rowsUpdated, err := result.RowsAffected()
-	logFatal(err)
-
-	json.NewEncoder(w).Encode(rowsUpdated)
 }
 
 func removeBook(w http.ResponseWriter, r *http.Request) {

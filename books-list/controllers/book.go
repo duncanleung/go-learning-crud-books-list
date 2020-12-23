@@ -104,3 +104,33 @@ func (c Controller) AddBook(db *sql.DB) http.HandlerFunc {
 		utils.SendSuccess(w, bookID)
 	}
 }
+
+func (c Controller) UpdateBook(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var book models.Book
+		var error models.Error
+
+		params := mux.Vars(r)
+		id, _ := strconv.Atoi(params["id"])
+
+		json.NewDecoder(r.Body).Decode(&book)
+
+		if book.Author == "" || book.Title == "" || book.Year == "" {
+			error.Message = "Please enter Author, Title, and Year"
+			utils.SendError(w, http.StatusBadRequest, error)
+			return
+		}
+
+		bookRepo := bookRepos.BookRepository{}
+		rowsUpdated, err := bookRepo.UpdateBook(db, book, id)
+
+		if err != nil {
+			error.Message = "Server error"
+			utils.SendError(w, http.StatusInternalServerError, error)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		utils.SendSuccess(w, rowsUpdated)
+	}
+}
