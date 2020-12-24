@@ -15,6 +15,10 @@ Create `.env`
 POSTGRESQL_URL = "postgres://{{DB_NAME}}:{{DB_PASSWORD}}@suleiman.db.elephantsql.com:5432/{{DB_NAME}}"
 ```
 
+Database connection is created in:
+
+`/driver/driver.go`
+
 ## Go Server
 
 Routes of the Go server are:
